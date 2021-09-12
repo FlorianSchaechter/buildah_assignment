@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: nodejs-pipeline
+  name: buildah-nodejs-pipeline
 spec:
   params:
     - name: source-repo
@@ -37,10 +37,10 @@ spec:
             - install-ci-test
       workspaces:
         - name: source
-          workspace: pipeline-shared-data
+          workspace: pipeline-shared-data    
     - name: build-and-push-image
       runAfter:
-        - run-tests
+        - clone.repository
       taskRef:
         kind: ClusterTask
         name: buildah
@@ -50,37 +50,4 @@ spec:
       workspaces:
         - name: source
           workspace: pipeline-shared-data
-    - name: create-envorinment-config
-      runAfter:
-        - build-and-push-image
-      taskRef:
-        name: kustomize
-      params:
-        - name: app-name
-          value: "$(params.app-name)"
-        - name: app-namespace
-          value: "$(context.pipelineRun.namespace)"
-        - name: source-repo
-          value: "$(params.source-repo)"
-        - name: commit
-          value: "$(tasks.clone-repository.results.commit)"
-        - name: image-repo
-          value: "$(params.image-repo)"
-      workspaces:
-        - name: source
-          workspace: pipeline-shared-data
-    - name: try-to-deploy
-      runAfter:
-        - create-envorinment-config
-      taskRef:
-        name: try-to-deploy
-      params:
-        - name: app-name
-          value: "$(params.app-name)"
-        - name: app-namespace
-          value: "$(context.pipelineRun.namespace)"
-      workspaces:
-        - name: source
-          workspace: pipeline-shared-data          
-          
     
